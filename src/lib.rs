@@ -1,41 +1,32 @@
 use std::error::Error;
 use std::fs;
+pub mod args;
 
-pub fn read_file_lines(config: Config) -> Result<(), Box<dyn Error>> {
-    println!("Reading lines: {:?}", config.filename);
+pub fn read_file_lines(args: args::Cli) -> Result<(), Box<dyn Error>> {
+    println!("Reading lines searching for Tag: {:?}", args.pattern);
 
-    let contents = fs::read_to_string(config.filename)?;
-    search_tag(&contents);
+    let contents = fs::read_to_string(args.path)?;
+    search_tag(&contents, args.pattern);
     Ok(())
 }
 
-pub struct Config {
-    pub query: String,
-    pub filename: String,
-}
-
-impl Config {
-    pub fn new(args: &[String]) -> Result<Config, &str> {
-        if args.len() < 3 {
-            return Err("Not enough arguments");
-        }
-
-        let query = args[1].clone();
-        let filename = args[2].clone();
-
-        Ok(Config { query, filename })
-    }
-}
-
-fn search_tag<'a>(contents: &'a str) -> Vec<&'a str> {
+fn search_tag<'a>(contents: &'a str, tag: String) -> Vec<&'a str> {
     for line in contents.lines() {
-        println!("{:?}", line);
+        // let split = line.split(" ");
+        // for s in split {
+        //     println!("{}", s)
+        // }
+
         if is_tag_line(line) {
-            println!("{:?}", line)
+            let tag_with_hashtag = format!("#{}", tag);
+            if line.contains(&tag_with_hashtag) {
+                println!("File contains tag {}", line)
+            }
         }
     }
     vec![]
 }
+
 /// Checks if a line contains a Tag.
 ///
 /// A Tag starts with Hashtag and directly continues a string.
