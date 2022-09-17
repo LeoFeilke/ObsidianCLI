@@ -1,12 +1,18 @@
 use clap::Parser;
-use obsidian::{args::Cli, read_file_lines};
-use std::process;
+use cli::args;
+use cli::args::Commands;
+use cli::commands::get_resource;
+mod cli;
 
-fn main() {
-    let args = Cli::parse();
+fn main() -> () {
+    let args = args::Cli::parse();
 
-    if let Err(e) = read_file_lines(args) {
-        println!("Application error: {}", e);
-        process::exit(1)
+    match &args.command {
+        Commands::Get(resource) => get_resource(&args, resource),
+        Commands::Add(resource) => {
+            if args.verbose {
+                println!("'Obsidian add' was used, name is: {:?}", resource.tag)
+            }
+        }
     }
 }
