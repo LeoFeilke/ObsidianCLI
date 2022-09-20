@@ -2,7 +2,7 @@ use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
 
 /// Obsidian CLI Tool Arguments
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[clap(name = "Obsidian CLI")]
 #[clap(author = "Leonardo Feilke <leofeilke@hotmail.com>")]
 #[clap(version = "0.1")]
@@ -25,7 +25,7 @@ pub struct Cli {
     pub command: Commands,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 pub enum Commands {
     /// Get Obsidian resources
     #[clap(about = "Get Obsidian Resource(s) from file(s)")]
@@ -49,4 +49,13 @@ pub struct Resource {
         help = "References to other files. Example: [[Einstein]]"
     )]
     pub reference: Option<String>,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum ResourceCommands {
+    #[clap(about = "Tags")]
+    Tag,
+
+    #[clap(about = "References to other files")]
+    Reference,
 }

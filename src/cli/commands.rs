@@ -1,4 +1,5 @@
 use super::args::{self, Resource};
+use regex::Regex;
 use std::{
     error::Error,
     fs::{self, DirEntry, ReadDir},
@@ -29,57 +30,68 @@ pub fn get_file_lines(args: &args::Cli) -> Result<String, Box<dyn Error>> {
 }
 
 pub fn get_resource<'a>(args: &args::Cli, resource: &Resource) {
-    if args.verbose {
-        println!("'Obsidian get' was used, resources are: {:?}", resource)
+    let files = get_files_from_path(&args).unwrap();
+    for file in files {
+        println!("Directory files: {}", file.file_name().to_str().unwrap());
     }
+
     if let Some(tag) = &resource.tag {
-        println!("'Getting tag: {:?}", resource.tag);
         return get_tag(&args, tag.to_string());
-    } else if let Some(reference) = &resource.reference {
-        println!("'Getting resource: {:?}", resource.tag);
+    }
+    if let Some(reference) = &resource.reference {
         return get_reference(&args, reference.to_string());
     }
 }
 
+fn contains_resource(line: &str, regex: &Regex) -> bool {
+    regex.is_match(line)
+}
+
 fn get_tag<'a>(args: &args::Cli, tag: String) -> () {
     let mut lines: Vec<&str> = Vec::new();
+    let tag_regex = r"\B(\#[a-zA-Z0-9]+\b)";
+    let regex = Regex::new(tag_regex).unwrap();
 
     if let Ok(contents) = get_file_lines(&args) {
         for line in contents.lines() {
-            if is_tag_line(line) {
-                let tag_with_hashtag = format!("#{}", tag);
-                if line.contains(&tag_with_hashtag) {
-                    lines.push(line);
-                }
+            if contains_resource(line, &regex) {
+                lines.push(line);
             }
         }
         if lines.len() > 0 {
             println!("File contains tag: {}", tag);
             println!("Times found: {}", lines.len());
+        } else {
+            println!("No tags found within file");
         }
     }
 }
 
 fn get_reference<'a>(args: &args::Cli, reference: String) -> () {
     let mut lines: Vec<&str> = Vec::new();
+    let regex =
+        Regex::new(r"(.?)\[\[([^\#|\]\n\r\t]+)(\#([^\#|\]\n\r\t]+))?(\|([^\#|\]\n\r\t]+))?\]\]")
+            .unwrap();
 
     if let Ok(contents) = get_file_lines(&args) {
         for line in contents.lines() {
             if is_reference_line(line) {
-                let refence_with_format = format!("[[{}]]", reference);
-                if line.contains(&refence_with_format) {
+                if contains_resource(line, &regex) {
                     lines.push(line);
-                    println!("File contains reference: {}", line)
                 }
             }
         }
-        println!("Times found: {}", lines.len());
+        if lines.len() > 0 && args.verbose {
+            println!("File contains reference: {}", reference);
+            println!("Times found: {}", lines.len());
+        }
     }
 }
 
 /// Checks if a line contains a Tag.
 ///
 /// A Tag starts with Hashtag and directly continues a string.
+#[allow(dead_code)]
 pub fn is_tag_line(line: &str) -> bool {
     if line.contains("#") {
         return !line.replace("#", "").starts_with(char::is_whitespace);
